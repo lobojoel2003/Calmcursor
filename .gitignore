@@ -1,0 +1,18 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Frontend
+/app/node_modules/
+/app/dist/
+
+# Tauri generated files
+/app/src-tauri/gen/
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp

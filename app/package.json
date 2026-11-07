@@ -1,0 +1,22 @@
+{
+  "name": "calmcursor-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Calmcursor desktop app: tremor-steadying pointer with calibration game and live trace",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7"
+  }
+}

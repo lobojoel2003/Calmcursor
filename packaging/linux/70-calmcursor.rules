@@ -1,0 +1,12 @@
+# Calmcursor: let the user at the active seat steady their mouse.
+#
+# Calmcursor reads mice and trackballs (/dev/input/event*) and replays the
+# steadied movement through a virtual pointer (/dev/uinput). The "uaccess"
+# tag gives the person logged in at the computer access to these devices,
+# and only while they are logged in locally.
+
+# The uinput device, used to create the virtual pointer.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"
+
+# Mice and trackballs.
+SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_MOUSE}=="1", TAG+="uaccess"

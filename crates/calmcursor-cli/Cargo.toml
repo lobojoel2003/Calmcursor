@@ -1,0 +1,29 @@
+[package]
+name = "calmcursor-cli"
+description = "Command-line pointer steadier for people with hand tremor (headless Calmcursor)"
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "calmcursor-cli"
+path = "src/main.rs"
+
+[dependencies]
+calmcursor-core.workspace = true
+calmcursor-platform.workspace = true
+clap = { version = "4.5", features = ["derive"] }
+ctrlc = "3.4"
+env_logger.workspace = true
+log.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

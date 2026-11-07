@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Calmcursor</title>
+  <defs>
+    <linearGradient id="bg" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#33c7ae"/>
+      <stop offset="1" stop-color="#11695c"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#04332c" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#shine)"/>
+  <!-- A shaky path that calms down as it reaches the pointer. -->
+  <path d="M176 800 L206 742 L236 806 L266 734 L296 796 L326 736 L354 782"
+        fill="none" stroke="#ffb49c" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M354 782 C 384 752, 410 730, 440 712"
+        fill="none" stroke="#ffffff" stroke-opacity="0.95" stroke-width="30" stroke-linecap="round"/>
+  <!-- The pointer. -->
+  <path filter="url(#shadow)" fill="#ffffff"
+        d="M486 214 L486 664 Q486 686 503 671 L590 592 L652 736 Q660 754 678 746 L726 725 Q743 717 736 700 L676 562 L792 558 Q814 557 799 541 L511 199 Q486 173 486 214 Z"/>
+</svg>

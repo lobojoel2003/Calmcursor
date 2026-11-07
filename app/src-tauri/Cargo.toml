@@ -1,0 +1,35 @@
+[package]
+name = "calmcursor-app"
+description = "Calmcursor desktop app: a tremor-steadying pointer with a calibration game and live trace"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
+default-run = "calmcursor"
+
+[[bin]]
+name = "calmcursor"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.5", features = [] }
+
+[dependencies]
+calmcursor-core.workspace = true
+calmcursor-platform.workspace = true
+env_logger.workspace = true
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2.9", features = ["tray-icon", "image-png"] }
+tauri-plugin-autostart = "2.5"
+tauri-plugin-global-shortcut = "2.3"
+tauri-plugin-opener = "2.5"
+tauri-plugin-single-instance = "2.3"
+
+[lints]
+workspace = true

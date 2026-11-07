@@ -1,0 +1,77 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Calmcursor",
+  "mainBinaryName": "calmcursor",
+  "identifier": "io.github.lobojoel2003.calmcursor",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Calmcursor",
+        "width": 1120,
+        "height": 760,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "publisher": "Joel Stain Lobo",
+    "homepage": "https://github.com/lobojoel2003/Calmcursor",
+    "copyright": "Copyright © 2026 Joel Stain Lobo. Licensed under GPL-3.0-or-later.",
+    "license": "GPL-3.0-or-later",
+    "licenseFile": "../../LICENSE",
+    "category": "Utility",
+    "shortDescription": "Steadies the mouse pointer for people with hand tremor",
+    "longDescription": "Calmcursor smooths out hand tremor (for example from Parkinson's disease or essential tremor) so the pointer stops jumping and clicks land where you aim. A 30-second calibration game measures your tremor and tunes the filter for you, and a live trace shows your shaky path next to the steadied one.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "linux": {
+      "deb": {
+        "section": "utils",
+        "files": {
+          "/usr/lib/udev/rules.d/70-calmcursor.rules": "../../packaging/linux/70-calmcursor.rules",
+          "/usr/lib/modules-load.d/calmcursor.conf": "../../packaging/linux/modules-load.conf"
+        },
+        "postInstallScript": "../../packaging/linux/postinst.sh",
+        "postRemoveScript": "../../packaging/linux/postrm.sh"
+      },
+      "rpm": {
+        "files": {
+          "/usr/lib/udev/rules.d/70-calmcursor.rules": "../../packaging/linux/70-calmcursor.rules",
+          "/usr/lib/modules-load.d/calmcursor.conf": "../../packaging/linux/modules-load.conf"
+        },
+        "postInstallScript": "../../packaging/linux/postinst.sh",
+        "postRemoveScript": "../../packaging/linux/postrm.sh"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": "-"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  }
+}

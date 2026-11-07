@@ -1,0 +1,50 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/calmcursor-core",
+    "crates/calmcursor-platform",
+    "crates/calmcursor-cli",
+    "app/src-tauri",
+]
+# `cargo build` / `cargo test` at the root skip the GUI app so the core
+# libraries build without WebKitGTK. Use `-p calmcursor-app` or `--workspace`.
+default-members = [
+    "crates/calmcursor-core",
+    "crates/calmcursor-platform",
+    "crates/calmcursor-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+license = "GPL-3.0-or-later"
+authors = ["Joel Stain Lobo"]
+repository = "https://github.com/lobojoel2003/Calmcursor"
+homepage = "https://github.com/lobojoel2003/Calmcursor"
+keywords = ["accessibility", "tremor", "parkinsons", "mouse", "one-euro-filter"]
+categories = ["accessibility"]
+
+[workspace.dependencies]
+calmcursor-core = { path = "crates/calmcursor-core", version = "0.1.0" }
+calmcursor-platform = { path = "crates/calmcursor-platform", version = "0.1.0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+log = "0.4"
+env_logger = "0.11"
+dirs = "6.0"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
