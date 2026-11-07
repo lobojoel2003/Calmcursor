@@ -107,7 +107,11 @@ jobs:
           # The build number becomes CFBundleVersion on macOS and the fourth
           # field of the MSI version on Windows (MSI needs plain X.Y.Z.N).
           core="${VERSION%%-*}"
-          config=$(printf '{"bundle":{"macOS":{"bundleVersion":"%s"},"windows":{"wix":{"version":"%s.%s"}}}}' "$BUILD" "$core" "$BUILD")
+          # Written to a file: inline JSON can lose its quotes through npx.cmd on Windows.
+          printf '{"bundle":{"macOS":{"bundleVersion":"%s"},"windows":{"wix":{"version":"%s.%s"}}}}' \
+            "$BUILD" "$core" "$BUILD" > release-config.json
+          cat release-config.json
+          config=release-config.json
           # Retry once: hdiutil (macOS DMG) occasionally fails on CI runners.
           for attempt in 1 2; do
             if npx tauri build --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}" --config "$config"; then

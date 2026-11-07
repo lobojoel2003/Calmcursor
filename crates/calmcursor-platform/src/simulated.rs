@@ -89,12 +89,14 @@ mod tests {
     fn simulated_steadier_produces_a_trace() {
         let s = Steadier::start_simulated(&Settings::default(), TremorModel::moderate());
         s.set_trace(true);
-        std::thread::sleep(Duration::from_millis(600));
+        // Generous margins: CI machines (and Windows' default 15.6 ms timer)
+        // run the threads far slower than the nominal 125/250 Hz.
+        std::thread::sleep(Duration::from_millis(1000));
         let trace = s.drain_trace();
-        assert!(trace.len() > 50, "only {} samples", trace.len());
+        assert!(trace.len() > 20, "only {} samples", trace.len());
         let status = s.status();
         assert!(status.running);
-        assert!(status.stats.motion_events > 30);
+        assert!(status.stats.motion_events > 20, "{:?}", status.stats);
         assert_eq!(status.backend, super::NAME);
         s.stop();
     }
