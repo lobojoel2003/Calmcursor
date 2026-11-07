@@ -1,0 +1,20 @@
+name: Idea or request
+description: Suggest something that would make Calmcursor more useful
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would help?
+      description: Describe the difficulty you (or someone you support) run into, in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea (optional)
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS, Linux, All]

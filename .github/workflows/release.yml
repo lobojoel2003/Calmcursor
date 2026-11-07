@@ -1,0 +1,254 @@
+name: Release
+
+# Pushing a tag like v1.2.3 builds every installer and publishes a GitHub
+# release. Run it by hand ("Run workflow") for a dry run that builds and
+# uploads the files as workflow artifacts without publishing anything.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish a GitHub release (needs a tag that matches the version)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CALMCURSOR_BUILD_NUMBER: ${{ github.run_number }}
+  CALMCURSOR_GIT_SHA: ${{ github.sha }}
+  CALMCURSOR_CHANNEL: release
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+      date: ${{ steps.v.outputs.date }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        name: Check versions
+        run: |
+          version=$(python3 scripts/version.py)
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            python3 scripts/version.py check "${GITHUB_REF_NAME}"
+            tag="${GITHUB_REF_NAME}"
+          else
+            python3 scripts/version.py check
+            tag="v${version}"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          case "$version" in *-*) echo "prerelease=true" ;; *) echo "prerelease=false" ;; esac >> "$GITHUB_OUTPUT"
+          echo "date=$(git log -1 --format=%cs)" >> "$GITHUB_OUTPUT"
+
+  app:
+    name: App (${{ matrix.name }})
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            rust_targets: x86_64-unknown-linux-gnu
+            bundles: deb,rpm,appimage
+          - name: Windows x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust_targets: x86_64-pc-windows-msvc
+            bundles: msi,nsis
+          - name: macOS universal
+            os: macos-latest
+            target: universal-apple-darwin
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+            bundles: app,dmg
+    runs-on: ${{ matrix.os }}
+    env:
+      CALMCURSOR_BUILD_DATE: ${{ needs.prepare.outputs.date }}
+      APPIMAGE_EXTRACT_AND_RUN: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Linux system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
+            libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+      - name: Build installers
+        shell: bash
+        working-directory: app
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ github.run_number }}
+        run: |
+          npm ci
+          # The build number becomes CFBundleVersion on macOS and the fourth
+          # field of the MSI version on Windows (MSI needs plain X.Y.Z.N).
+          core="${VERSION%%-*}"
+          config=$(printf '{"bundle":{"macOS":{"bundleVersion":"%s"},"windows":{"wix":{"version":"%s.%s"}}}}' "$BUILD" "$core" "$BUILD")
+          # Retry once: hdiutil (macOS DMG) occasionally fails on CI runners.
+          for attempt in 1 2; do
+            if npx tauri build --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}" --config "$config"; then
+              exit 0
+            fi
+            echo "::warning::installer build attempt $attempt failed"
+          done
+          exit 1
+      - name: Collect installers
+        shell: bash
+        run: |
+          mkdir -p out
+          b="target/${{ matrix.target }}/release/bundle"
+          find "$b" -maxdepth 2 -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \
+            -o -name '*.msi' -o -name '*-setup.exe' -o -name '*.dmg' \) -exec cp {} out/ \;
+          ls -la out
+          test -n "$(ls -A out)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: app-${{ matrix.target }}
+          path: out/*
+          if-no-files-found: error
+
+  cli:
+    name: CLI (${{ matrix.name }})
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-22.04
+            label: linux-x86_64
+          - name: Windows x86_64
+            os: windows-latest
+            label: windows-x86_64
+          - name: macOS universal
+            os: macos-latest
+            label: macos-universal
+    runs-on: ${{ matrix.os }}
+    env:
+      CALMCURSOR_BUILD_DATE: ${{ needs.prepare.outputs.date }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: cli
+      - name: Build and package
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          name="calmcursor-cli-${VERSION}-${{ matrix.label }}"
+          mkdir -p "pkg/$name" out
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            cargo build --release --locked -p calmcursor-cli --target aarch64-apple-darwin
+            cargo build --release --locked -p calmcursor-cli --target x86_64-apple-darwin
+            lipo -create -output "pkg/$name/calmcursor-cli" \
+              target/aarch64-apple-darwin/release/calmcursor-cli \
+              target/x86_64-apple-darwin/release/calmcursor-cli
+            codesign --force --sign - "pkg/$name/calmcursor-cli"
+          else
+            cargo build --release --locked -p calmcursor-cli
+            cp target/release/calmcursor-cli* "pkg/$name/" 2>/dev/null || true
+            rm -f "pkg/$name/"*.d "pkg/$name/"*.pdb
+          fi
+          cp README.md LICENSE CHANGELOG.md "pkg/$name/"
+          if [ "$RUNNER_OS" = "Linux" ]; then cp packaging/linux/70-calmcursor.rules "pkg/$name/"; fi
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            (cd pkg && 7z a -tzip "../out/$name.zip" "$name" > /dev/null)
+          else
+            tar -C pkg -czf "out/$name.tar.gz" "$name"
+          fi
+          ls -la out
+          "pkg/$name/calmcursor-cli" --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.label }}
+          path: out/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: [prepare, app, cli]
+    if: github.ref_type == 'tag' || inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.prepare.outputs.version }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: |
+          sha256sum * | tee SHA256SUMS.txt
+      - name: Release notes
+        run: |
+          {
+            python3 scripts/version.py notes "$VERSION"
+            echo
+            echo "## Downloads"
+            echo
+            echo "| System | File |"
+            echo "|---|---|"
+            for f in dist/*; do
+              n=$(basename "$f")
+              case "$n" in
+                *.msi) echo "| Windows (installer for all users) | \`$n\` |" ;;
+                *-setup.exe) echo "| Windows (installer for you only, recommended) | \`$n\` |" ;;
+                *.dmg) echo "| macOS 10.15+ (Apple silicon and Intel) | \`$n\` |" ;;
+                *.deb) echo "| Debian, Ubuntu, Mint, Pop!_OS | \`$n\` |" ;;
+                *.rpm) echo "| Fedora, openSUSE, RHEL | \`$n\` |" ;;
+                *.AppImage) echo "| Any Linux (portable) | \`$n\` |" ;;
+                calmcursor-cli-*) echo "| Command-line tool | \`$n\` |" ;;
+                SHA256SUMS.txt) echo "| Checksums | \`$n\` |" ;;
+              esac
+            done
+            echo
+            echo "First time? See [Install](https://github.com/${GITHUB_REPOSITORY}#install) for the one-time permission step on macOS and Linux."
+            echo
+            echo "Build ${GITHUB_RUN_NUMBER} · commit \`${GITHUB_SHA::8}\`"
+          } > notes.md
+          cat notes.md
+      - name: Create or update the release
+        run: |
+          flags=()
+          if [ "${{ needs.prepare.outputs.prerelease }}" = "true" ]; then flags+=(--prerelease); fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --notes-file notes.md "${flags[@]}"
+          else
+            gh release create "$TAG" dist/* --verify-tag --title "Calmcursor $VERSION" \
+              --notes-file notes.md "${flags[@]}"
+          fi

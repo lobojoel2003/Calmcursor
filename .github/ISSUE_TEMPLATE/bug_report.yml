@@ -1,0 +1,48 @@
+name: Something isn't working
+description: Report a problem with Calmcursor
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. If the pointer is misbehaving right now, pause steadying with the shortcut or quit Calmcursor from the tray icon; the mouse goes straight back to normal.
+  - type: input
+    id: version
+    attributes:
+      label: Calmcursor version and build
+      description: From the About screen, or `calmcursor-cli --version`.
+      placeholder: 0.1.0 (build 12, 1a2b3c4d)
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows 11, Windows 10, macOS, Linux (X11), Linux (Wayland), Other]
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version and pointing device
+      placeholder: "Ubuntu 24.04, Logitech M720 mouse"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Turn on steadying
+        2. ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output (optional)
+      description: Run Calmcursor from a terminal with RUST_LOG=debug and paste anything relevant.
+      render: text
