@@ -62,9 +62,13 @@ Pushing such a tag is what triggers the release workflow.
    - writes `SHA256SUMS.txt`;
    - publishes the GitHub release with notes from the changelog.
 
+Instead of pushing the tag yourself (step 4), you can push the commit and
+then run the **Release** workflow by hand on `main` from the Actions tab with
+**Publish** ticked. It builds everything, creates the annotated `vX.Y.Z` tag
+on that exact commit, and publishes the release.
+
 To test the whole pipeline without publishing, run the Release workflow by
-hand from the Actions tab and leave **Publish** unticked. The files appear as
-workflow artifacts.
+hand and leave **Publish** unticked. The files appear as workflow artifacts.
 
 A version with a suffix, such as `0.2.0-beta.1`, is published as a
 pre-release.

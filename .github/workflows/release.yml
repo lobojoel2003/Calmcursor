@@ -1,8 +1,11 @@
 name: Release
 
-# Pushing a tag like v1.2.3 builds every installer and publishes a GitHub
-# release. Run it by hand ("Run workflow") for a dry run that builds and
-# uploads the files as workflow artifacts without publishing anything.
+# Two ways to release:
+# - push a tag like v1.2.3, or
+# - run this workflow by hand on main with "Publish" ticked: it builds,
+#   tags the commit vX.Y.Z (X.Y.Z from Cargo.toml) and publishes.
+# Running it by hand without "Publish" is a dry run: the installers are
+# uploaded as workflow artifacts and nothing is released.
 
 on:
   push:
@@ -10,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish a GitHub release (needs a tag that matches the version)"
+        description: "Publish: tag this commit vX.Y.Z and create the GitHub release"
         type: boolean
         default: false
 
@@ -209,6 +212,24 @@ jobs:
       TAG: ${{ needs.prepare.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
+      - name: Tag the release commit (manual runs)
+        if: github.ref_type != 'tag'
+        env:
+          ACTOR: ${{ github.actor }}
+          ACTOR_ID: ${{ github.actor_id }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Publish manual releases from main (this run is on $GITHUB_REF)"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            echo "Tag $TAG already exists"
+          else
+            git config user.name "$ACTOR"
+            git config user.email "${ACTOR_ID}+${ACTOR}@users.noreply.github.com"
+            git tag -a "$TAG" -m "Calmcursor $VERSION" "$GITHUB_SHA"
+            git push origin "refs/tags/$TAG"
+          fi
       - uses: actions/download-artifact@v8
         with:
           path: dist
